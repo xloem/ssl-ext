@@ -1,0 +1,34 @@
+
+To create a custom engine to provide cryptographic algorithms:
+	https://wiki.openssl.org/index.php/Creating_an_OpenSSL_Engine_to_use_indigenous_ECDH_ECDSA_and_HASH_Algorithms
+	#include <openssl/engine.h>
+
+SSL lets the user specify a message callback.
+	This callback appeared documented to receive record headers but not record data.
+
+Digests happen in the AEAD ciphers.  ssl_cipher_st/SSL_CIPHER links to the function.
+
+To create a custom extension:
+- create an SSL_CTX in the normal way
+- call SSL_CTX_add_custom_ext, supplying the reference to the SSL_CTX
+	- 2nd argument: type of extension
+	- 3rd argument: context extension is valid for, e.g. SSL_EXT_CLIENT_HELLO
+	- next arguments are callbacks for adding, freeing, and parsing the extension
+    SSL_CTX_add_custom_ext(3) in libssl-doc
+- an appropriate context might be NewSessionTicket or CertificateRequest
+
+		some ssl docs at https://datatracker.ietf.org/doc/html/rfc8446
+
+- post-handshake messages
+	NewSessionTicket - from server
+		already has an 'early_data' extension (0-RTT data/ Section 4.2.10 e.g. RFC7301 ALPN)
+	CertificateRequest - from server
+		only with post_handshake_auth, otherwise unexpected_message
+		client: Authentication
+			client: optionally:Certificate,CertificateVerify,Finished
+			                or:Certificate(empty),Finished
+	KeyUpdate - from either
+		Section 7.2, both parties update keys from content of message
+			reply: optionally: KeyUpdate
+	Alert - from either
+	...
